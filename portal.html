@@ -1,1 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123c2c">
+<title>EthioAgriRisk AI | Agriculture Intelligence</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root {
+  --green:#176b45;
+  --dark:#123c2c;
+  --light:#eef7f0;
+  --orange:#e99b36;
+  --text:#24352b;
+  --muted:#65766a;
+  --border:#dce8df;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f5f8f5;
+  color:var(--text)
+}
+header{
+  background:var(--dark);
+  color:white;
+  padding:20px 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap
+}
+.brand{font-size:22px;font-weight:800}
+.brand span{color:#a9e5a8}
+header p{margin:6px 0 0;color:#d5e8d8;font-size:13px}
+button{
+  border:0;
+  border-radius:8px;
+  padding:11px 15px;
+  font-weight:700;
+  cursor:pointer
+}
+.primary{background:var(--green);color:white}
+.secondary{background:#e9f2eb;color:var(--dark)}
+main{max-width:1150px;margin:auto;padding:22px}
+.card{
+  background:white;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+  margin-bottom:18px;
+  box-shadow:0 3px 12px #183e2710
+}
+h2{margin-top:0;font-size:20px}
+h3{font-size:16px}
+p{line-height:1.5}
+.muted{color:var(--muted);font-size:13px}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:14px
+}
+.metric{
+  background:var(--light);
+  border-radius:12px;
+  padding:17px
+}
+.metric strong{display:block;font-size:25px;color:var(--green);margin:9px 0}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 5px}
+input,select{
+  width:100%;
+  padding:12px;
+  border:1px solid #cbd9ce;
+  border-radius:8px;
+  background:white;
+  font-size:15px
+}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#message{white-space:pre-wrap;overflow-wrap:anywhere}
+.hidden{display:none!important}
+.badge{
+  display:inline-block;
+  padding:5px 9px;
+  background:#e4f3e7;
+  color:#176b45;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:700
+}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+nav button{background:white;border:1px solid var(--border)}
+nav button.active{background:var(--green);color:white}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border)}
+.tablewrap{overflow-x:auto}
+footer{text-align:center;padding:25px;color:var(--muted);font-size:12px}
+@media(max-width:600px){
+ main{padding:12px}
+ header{padding:18px}
+ .card{padding:15px}
+ .brand{font-size:19px}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div>
+    <div class="brand">🌱 Ethio<span>AgriRisk</span> AI</div>
+    <p>Satellite-Based Agricultural Yield & Climate Risk Intelligence</p>
+  </div>
+  <div id="accountArea">
+    <span id="accountStatus" class="badge">Connecting…</span>
+    <button id="logoutBtn" class="secondary hidden" onclick="logout()">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="authPanel">
+    <h2>Welcome to EthioAgriRisk AI</h2>
+    <p class="muted">
+      Sign in or create an account to access your agriculture intelligence workspace.
+    </p>
+
+    <label for="email">Email address</label>
+    <input id="email" type="email" autocomplete="email"
+           placeholder="you@example.com">
+
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password"
+           placeholder="At least 6 characters">
+
+    <div class="actions">
+      <button class="primary" onclick="signIn()">Sign in</button>
+      <button class="secondary" onclick="signUp()">Create account</button>
+    </div>
+    <p id="authMessage" class="muted" role="status"></p>
+  </section>
+
+  <section id="dashboard" class="hidden">
+    <div class="card">
+      <span class="badge">Agriculture Intelligence Platform</span>
+      <h2>National Agricultural Risk Dashboard</h2>
+      <p id="welcome">Welcome to your workspace.</p>
+      <p class="muted">
+        Select your stakeholder workspace. Access to real records is controlled
+        by Supabase authentication and database policies.
+      </p>
+      <label for="role">Stakeholder workspace</label>
+      <select id="role" onchange="changeRole()">
+        <option>Ministry of Agriculture</option>
+        <option>Agriculture Development Institution</option>
+        <option>Insurance Company</option>
+        <option>Bank or Microfinance Institution</option>
+        <option>Cooperative or Union</option>
+        <option>Smallholder Farmer</option>
+        <option>Platform Administrator</option>
+      </select>
+    </div>
+
+    <nav>
+      <button class="active" onclick="showTab('overview',this)">Overview</button>
+      <button onclick="showTab('farms',this)">Farm Records</button>
+      <button onclick="showTab('risks',this)">Risk Assessments</button>
+      <button onclick="showTab('climate',this)">Climate & Satellite</button>
+    </nav>
+
+    <section id="overview" class="tab">
+      <div class="grid">
+        <div class="metric">
+          <div>Farm records accessible</div>
+          <strong id="farmCount">—</strong>
+          <span class="muted">Supabase records</span>
+        </div>
+        <div class="metric">
+          <div>Risk assessments accessible</div>
+          <strong id="riskCount">—</strong>
+          <span class="muted">Supabase records</span>
+        </div>
+        <div class="metric">
+          <div>Satellite observations</div>
+          <strong id="satCount">—</strong>
+          <span class="muted">Database records</span>
+        </div>
+        <div class="metric">
+          <div>Weather observations</div>
+          <strong id="weatherCount">—</strong>
+          <span class="muted">Database records</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h3>Platform Capabilities</h3>
+        <div class="grid">
+          <div><b>🛰️ Satellite intelligence</b><p class="muted">Designed for vegetation monitoring using NDVI and satellite observations.</p></div>
+          <div><b>🌦️ Climate risk</b><p class="muted">Designed for drought, rainfall, flood and weather-risk analysis.</p></div>
+          <div><b>🌾 Yield estimation</b><p class="muted">Designed for crop-yield estimates and woreda-level reporting.</p></div>
+          <div><b>🛡️ Agricultural insurance</b><p class="muted">Designed to support agricultural underwriting and claims assessment.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="farms" class="tab hidden card">
+      <h2>Farm Records</h2>
+      <p class="muted">Records returned by your database permissions.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Record</th><th>Details</th></tr></thead>
+        <tbody id="farmRows"><tr><td colspan="2">Loading…</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section id="risks" class="tab hidden card">
+      <h2>Agricultural Risk Assessments</h2>
+      <p class="muted">Existing database records only; no risk scores are fabricated.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Record</th><th>Details</th></tr></thead>
+        <tbody id="riskRows"><tr><td colspan="2">Loading…</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section id="climate" class="tab hidden">
+      <div class="card">
+        <h2>Satellite & Climate Observations</h2>
+        <p id="climateStatus" class="muted">
+          Checking available database records…
+        </p>
+        <p>
+          The presence of database tables does not itself connect a satellite
+          imagery provider, weather API or machine-learning model.
+        </p>
+      </div>
+    </section>
+  </section>
+
+  <section class="card">
+    <h3>System status</h3>
+    <p id="systemMessage" class="muted" role="status">
+      Initializing the application…
+    </p>
+  </section>
+</main>
+
+<footer>
+  EthioAgriRisk AI · Agricultural intelligence for Ethiopia<br>
+  Prototype portal — verify data quality and model performance before making
+  insurance, lending or government decisions.
+</footer>
+
+<script>
+/*
+ * Browser-safe configuration:
+ * Use only your Supabase project URL and publishable key here.
+ * Never put a service-role key or database password in this file.
+ */
+const SUPABASE_URL = "https://pxrksqjlsnlysvirwcsa.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RDMuwxu0UYAdN-2pIiie5w_qG8dqaKY";
+
+let client = null;
+let currentUser = null;
+
+const $ = id => document.getElementById(id);
+
+function message(text, isError=false) {
+  $("authMessage").textContent = text;
+  $("authMessage").style.color = isError ? "#b42318" : "#176b45";
+}
+
+function systemMessage(text) {
+  $("systemMessage").textContent = text;
+}
+
+function getCredentials() {
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  if (!email || !password) {
+    throw new Error("Enter your email address and password.");
+  }
+  if (password.length < 6) {
+    throw new Error("Password must contain at least 6 characters.");
+  }
+  return {email, password};
+}
+
+async function signUp() {
+  try {
+    const {email,password} = getCredentials();
+    message("Creating your account…");
+    const {data,error} = await client.auth.signUp({email,password});
+    if (error) throw error;
+
+    if (data.session) {
+      message("Account created. You are signed in.");
+      await updateSession(data.session);
+    } else {
+      message("Registration submitted. Check your email for a confirmation link, then sign in.");
+    }
+  } catch (e) {
+    message(e.message || "Registration failed.", true);
+  }
+}
+
+async function signIn() {
+  try {
+    const {email,password} = getCredentials();
+    message("Signing in…");
+    const {data,error} = await client.auth.signInWithPassword({email,password});
+    if (error) throw error;
+    message("Signed in successfully.");
+    await updateSession(data.session);
+  } catch (e) {
+    message(e.message || "Sign-in failed.", true);
+  }
+}
+
+async function logout() {
+  const {error} = await client.auth.signOut();
+  if (error) {
+    systemMessage("Could not sign out: " + error.message);
+    return;
+  }
+  await updateSession(null);
+  message("You have signed out.");
+}
+
+async function updateSession(session) {
+  currentUser = session?.user || null;
+  $("authPanel").classList.toggle("hidden",!!currentUser);
+  $("dashboard").classList.toggle("hidden",!currentUser);
+  $("logoutBtn").classList.toggle("hidden",!currentUser);
+  $("accountStatus").textContent = currentUser ? "Signed in" : "Not signed in";
+
+  if (currentUser) {
+    $("welcome").textContent = "Signed in as " + currentUser.email;
+    await loadDashboard();
+  } else {
+    systemMessage("Ready. Sign in to access your authorized workspace.");
+  }
+}
+
+async function countRows(table, schema="public") {
+  const {count,error} = await client.schema(schema)
+    .from(table).select("*",{count:"exact",head:true});
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function readRows(table, schema="public") {
+  const {data,error} = await client.schema(schema)
+    .from(table).select("*").limit(20);
+  if (error) throw error;
+  return data || [];
+}
+
+function safeText(value) {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function displayRows(targetId, rows) {
+  const target = $(targetId);
+  target.replaceChildren();
+
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 2;
+    td.textContent = "No accessible records found.";
+    tr.appendChild(td);
+    target.appendChild(tr);
+    return;
+  }
+
+  rows.forEach((row,index) => {
+    const tr = document.createElement("tr");
+    const first = document.createElement("td");
+    const second = document.createElement("td");
+    first.textContent = safeText(row.id ?? row.name ?? ("Record " + (index+1)));
+    second.textContent = Object.entries(row)
+      .filter(([key]) => key !== "id")
+      .slice(0,5)
+      .map(([key,value]) => key + ": " + safeText(value))
+      .join(" · ") || "Record available";
+    tr.append(first,second);
+    target.appendChild(tr);
+  });
+}
+
+async function loadDashboard() {
+  systemMessage("Loading records allowed for your account…");
+
+  const tasks = [
+    ["farms","public","farmCount","farmRows"],
+    ["risk_assessments","public","riskCount","riskRows"],
+    ["satellite_observations","agri","satCount",null],
+    ["weather_observations","agri","weatherCount",null]
+  ];
+
+  const outcomes = await Promise.all(tasks.map(async ([table,schema,countId,rowsId]) => {
+    try {
+      const count = await countRows(table,schema);
+      $(countId).textContent = count;
+      if (rowsId) {
+        const rows = await readRows(table,schema);
+        displayRows(rowsId,rows);
+      }
+      return {table,ok:true,count};
+    } catch (error) {
+      $(countId).textContent = "—";
+      if (rowsId) {
+        $(rowsId).replaceChildren();
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 2;
+        td.textContent = "Unavailable: " + error.message;
+        tr.appendChild(td);
+        $(rowsId).appendChild(tr);
+      }
+      return {table,ok:false,error:error.message};
+    }
+  }));
+
+  const climate = outcomes.filter(x =>
+    x.table === "satellite_observations" || x.table === "weather_observations"
+  );
+  $("climateStatus").textContent = climate.map(x =>
+    x.table + ": " + (x.ok ? x.count + " accessible records" : x.error)
+  ).join(" | ");
+
+  const failed = outcomes.filter(x=>!x.ok);
+  systemMessage(
+    failed.length
+      ? "Portal is signed in, but some tables are unavailable. Check schema exposure, grants and row-level security policies. Details: " +
+        failed.map(x=>x.table+": "+x.error).join(" | ")
+      : "Connected. Database queries completed for your signed-in account."
+  );
+}
+
+function showTab(tabId,button) {
+  document.querySelectorAll(".tab").forEach(el=>el.classList.add("hidden"));
+  $(tabId).classList.remove("hidden");
+  document.querySelectorAll("nav button").forEach(el=>el.classList.remove("active"));
+  button.classList.add("active");
+}
+
+function changeRole() {
+  const role = $("role").value;
+  systemMessage("Selected workspace: " + role +
+    ". Actual access remains controlled by database security policies.");
+}
+
+async function init() {
+  try {
+    if (!window.supabase) throw new Error("Supabase JavaScript library failed to load.");
+
+    client = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const {data,error} = await client.auth.getSession();
+    if (error) throw error;
+
+    await updateSession(data.session);
+    client.auth.onAuthStateChange((_event,session) => {
+      updateSession(session);
+    });
+  } catch (e) {
+    $("accountStatus").textContent = "Connection issue";
+    systemMessage("Initialization failed: " + e.message);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
